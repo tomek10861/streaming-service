@@ -1,0 +1,35 @@
+- hosts: ome_servers
+  become: yes
+  vars:
+    git_repo: 'https://gitlab.com/...' # link do repozytorium z plikami odtwarzacza
+    dest_path: '/app'  # katalog docelowy dla klonowanego repo
+
+  tasks:
+    - name: Ensure /app directory exists
+      file:
+        path: "{{ dest_path }}"
+        state: directory
+        mode: '0755'
+
+    - name: Check if Git repo is already cloned
+      stat:
+        path: "{{ dest_path }}/.git"
+      register: git_repo_cloned
+
+    - name: Clone Git repository
+      git:
+        repo: "{{ git_repo }}"
+        dest: "{{ dest_path }}"
+        version: "HEAD"
+        accept_hostkey: yes
+      when: not git_repo_cloned.stat.exists
+
+    - name: Update Git repository
+      git:
+        repo: "{{ git_repo }}"
+        dest: "{{ dest_path }}"
+        version: "HEAD"
+        force: yes
+        accept_hostkey: yes
+        update: yes
+      when: git_repo_cloned.stat.exists

@@ -1,0 +1,54 @@
+---
+# plik: docker-install.yml
+- name: Install Docker on Debian systems
+  hosts: ome_servers
+  gather_facts: yes
+  become: true
+
+  tasks:
+    - name: Update package manager index for Debian
+      apt:
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
+    - name: Install Docker prerequisites for Debian
+      apt:
+        name: "{{ packages }}"
+        state: present
+      vars:
+        packages:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+      when: ansible_os_family == "Debian"
+
+    - name: Add Docker GPG key for Debian
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
+      when: ansible_distribution == "Debian"
+
+    - name: Add Docker stable repository for Debian
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable
+        state: present
+        update_cache: true
+      when: ansible_distribution == "Debian"
+
+    - name: Install Docker for Debian
+      apt:
+        name: docker-ce
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Add current user to docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Start hello-world container to verify installation
+      command: docker run hello-world
+      when: ansible_os_family == "Debian"
